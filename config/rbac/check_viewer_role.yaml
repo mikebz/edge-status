@@ -1,0 +1,23 @@
+# permissions for end users to view checks.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: edge-status
+    app.kubernetes.io/managed-by: kustomize
+  name: check-viewer-role
+rules:
+- apiGroups:
+  - probe.mikebz.com
+  resources:
+  - checks
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - probe.mikebz.com
+  resources:
+  - checks/status
+  verbs:
+  - get

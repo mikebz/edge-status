@@ -1,0 +1,9 @@
+apiVersion: probe.mikebz.com/v1
+kind: Check
+metadata:
+  labels:
+    app.kubernetes.io/name: edge-status
+    app.kubernetes.io/managed-by: kustomize
+  name: check-sample
+spec:
+  # TODO(user): Add fields here
