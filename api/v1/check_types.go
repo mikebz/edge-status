@@ -25,17 +25,12 @@ import (
 
 // CheckSpec defines the desired state of Check
 type CheckSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Check. Edit check_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
 }
 
 // CheckStatus defines the observed state of Check
 type CheckStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Enabled bool `json:"enabled,omitempty"`
+	Total   int  `json:"total,omitempty"`
 }
 
 // +kubebuilder:object:root=true

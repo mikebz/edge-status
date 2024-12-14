@@ -1,8 +1,10 @@
 # edge-status
-// TODO(user): Add simple overview of use/purpose
+A quick project that probes other controllers for status and return aggregated status that can replace status checking in a central place like Hub.
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+Problem:
+- I'd like to create an aggregate status across many CRs that gives me an all up idea bout the system running.
+- I'd like it to be across the entire cluster.
 
 ## Getting Started
 
