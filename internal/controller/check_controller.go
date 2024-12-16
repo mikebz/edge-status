@@ -18,7 +18,9 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,19 +39,39 @@ type CheckReconciler struct {
 // +kubebuilder:rbac:groups=probe.mikebz.com,resources=checks/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=probe.mikebz.com,resources=checks/finalizers,verbs=update
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Check object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *CheckReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	log := log.FromContext(ctx)
+	logv1 := log.V(1)
 
-	// TODO(user): your logic here
+	var check probev1.Check
+	if err := r.Get(ctx, req.NamespacedName, &check); err != nil {
+		log.Error(err, "unable to fetch Check", "name", req.NamespacedName)
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	configMapList := &corev1.ConfigMapList{}
+	if err := r.List(ctx, configMapList, client.InNamespace(req.Namespace)); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to list configmaps: %w", err)
+	}
+
+	total := 0
+	installed := false
+
+	for _, configMap := range configMapList.Items {
+		logv1.Info("Found ConfigMap", "name", configMap.Name)
+
+		total++
+		installed = true
+	}
+
+	check.Status.Total = total
+	check.Status.Enabled = installed
+
+	if err := r.Status().Update(ctx, &check); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to update check status: %w", err)
+	}
 
 	return ctrl.Result{}, nil
 }
