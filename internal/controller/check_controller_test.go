@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -32,7 +33,7 @@ import (
 
 var _ = Describe("Check Controller", func() {
 	Context("When reconciling a resource", func() {
-		const resourceName = "test-resource"
+		const resourceName = "test-check"
 
 		ctx := context.Background()
 
@@ -41,10 +42,12 @@ var _ = Describe("Check Controller", func() {
 			Namespace: "default", // TODO(user):Modify as needed
 		}
 		check := &probev1.Check{}
+		cm := &corev1.ConfigMap{}
 
 		BeforeEach(func() {
+			var err error
 			By("creating the custom resource for the Kind Check")
-			err := k8sClient.Get(ctx, typeNamespacedName, check)
+			err = k8sClient.Get(ctx, typeNamespacedName, check)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &probev1.Check{
 					ObjectMeta: metav1.ObjectMeta{
@@ -55,16 +58,35 @@ var _ = Describe("Check Controller", func() {
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
+
+			By("creating a config map")
+			err = k8sClient.Get(ctx, typeNamespacedName, cm)
+			if err != nil && errors.IsNotFound(err) {
+				cm := &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      resourceName,
+						Namespace: "default",
+					},
+				}
+				Expect(k8sClient.Create(ctx, cm)).To(Succeed())
+			}
+
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
+			var err error
 			resource := &probev1.Check{}
-			err := k8sClient.Get(ctx, typeNamespacedName, resource)
+			err = k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, typeNamespacedName, cm)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(resource.Status.Enabled).To(BeTrue())
+			Expect(resource.Status.Total).To(Equal(1))
 
 			By("Cleanup the specific resource instance Check")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, cm)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
@@ -77,8 +99,6 @@ var _ = Describe("Check Controller", func() {
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
 		})
 	})
 })

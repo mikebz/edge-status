@@ -30,8 +30,8 @@ import (
 )
 
 var _ = Describe("ConfigMap Controller", func() {
-	Context("When reconciling a resource", func() {
-		const resourceName = "test-resource"
+	Context("When reconciling a Config Map", func() {
+		const resourceName = "test-config-map"
 
 		ctx := context.Background()
 
