@@ -1,9 +1,9 @@
 # edge-status
-A quick project that probes other controllers for status and return aggregated status that can replace status checking in a central place like Hub.
+A quick project that probes other resources for status and return aggregated status that can replace status checking.
 
 ## Description
 Problem:
-- I'd like to create an aggregate status across many CRs that gives me an all up idea bout the system running.
+- I'd like to create an aggregate status across many ConfigMaps that gives me an all up idea bout the system running.
 - I'd like it to be across the entire cluster.
 
 ## Getting Started
@@ -31,6 +31,12 @@ Make sure you have the proper permission to the registry if the above commands d
 make install
 ```
 
+**Run and Debug Locally**
+During development you can run the controller locally like this:
+```
+make run
+```
+
 **Deploy the Manager to the cluster with the image specified by `IMG`:**
 
 ```sh
@@ -47,7 +53,29 @@ You can apply the samples (examples) from the config/sample:
 kubectl apply -k config/samples/
 ```
 
->**NOTE**: Ensure that the samples has default values to test it out.
+Getting the status of the resources can be done here:
+```
+kubectl get check check-sample -oyaml
+
+apiVersion: probe.mikebz.com/v1
+kind: Check
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"probe.mikebz.com/v1","kind":"Check","metadata":{"annotations":{},"labels":{"app.kubernetes.io/managed-by":"kustomize","app.kubernetes.io/name":"edge-status"},"name":"check-sample","namespace":"default"},"spec":null}
+  creationTimestamp: "2024-12-16T21:24:29Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: edge-status
+  name: check-sample
+  namespace: default
+  resourceVersion: "1024522"
+  uid: 3e3d6d9e-2d2f-49a4-a8fb-3715e0ddee15
+status:
+  enabled: true
+  total: 3
+```
 
 ### To Uninstall
 **Delete the instances (CRs) from the cluster:**

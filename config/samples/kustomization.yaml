@@ -2,3 +2,4 @@
 resources:
 - probe_v1_check.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
+- foobar_configmap.yaml

@@ -43,7 +43,6 @@ type CheckReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 func (r *CheckReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-	logv1 := log.V(1)
 
 	var check probev1.Check
 	if err := r.Get(ctx, req.NamespacedName, &check); err != nil {
@@ -51,9 +50,28 @@ func (r *CheckReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	err := MapValues(ctx, r.Client, req, &check)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.Status().Update(ctx, &check); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to update check status: %w", err)
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// The MapValues function in the provided code iterates over ConfigMap resources within a
+// given namespace and calculates two values: the total number of config maps and a boolean
+// indicating whether any config maps exist.
+func MapValues(ctx context.Context, cl client.Client, req ctrl.Request, check *probev1.Check) error {
+	log := log.FromContext(ctx)
+	logv1 := log.V(1)
+
 	configMapList := &corev1.ConfigMapList{}
-	if err := r.List(ctx, configMapList, client.InNamespace(req.Namespace)); err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to list configmaps: %w", err)
+	if err := cl.List(ctx, configMapList, client.InNamespace(req.Namespace)); err != nil {
+		return fmt.Errorf("failed to list configmaps: %w", err)
 	}
 
 	total := 0
@@ -69,15 +87,36 @@ func (r *CheckReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	check.Status.Total = total
 	check.Status.Enabled = installed
 
-	if err := r.Status().Update(ctx, &check); err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to update check status: %w", err)
+	return nil
+}
+
+func MapAllValues(ctx context.Context, cl client.Client, req ctrl.Request) error {
+	log := log.FromContext(ctx)
+	logv1 := log.V(1)
+
+	checkList := &probev1.CheckList{}
+	if err := cl.List(ctx, checkList, client.InNamespace(req.Namespace)); err != nil {
+		return fmt.Errorf("failed to list configmaps: %w", err)
 	}
 
-	return ctrl.Result{}, nil
+	for _, check := range checkList.Items {
+		logv1.Info("Found Check", "name", check.Name)
+		err := MapValues(ctx, cl, req, &check)
+		if err != nil {
+			return err
+		}
+
+		if err := cl.Status().Update(ctx, &check); err != nil {
+			return fmt.Errorf("failed to update check status: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *CheckReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&probev1.Check{}).
 		Complete(r)
