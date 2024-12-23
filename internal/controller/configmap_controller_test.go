@@ -27,8 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	probev1 "github.com/mikebz/edge-status/api/v1"
 )
 
 var _ = Describe("ConfigMap Controller", func() {
@@ -47,20 +45,18 @@ var _ = Describe("ConfigMap Controller", func() {
 			By("creating the resource for ConfigMap")
 			err := k8sClient.Get(ctx, typeNamespacedName, cm)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &probev1.Check{
+				resource := &corev1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
 
 		AfterEach(func() {
-			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &probev1.Check{}
+			resource := &corev1.ConfigMap{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -69,7 +65,7 @@ var _ = Describe("ConfigMap Controller", func() {
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &CheckReconciler{
+			controllerReconciler := &ConfigMapReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
 			}
@@ -78,8 +74,6 @@ var _ = Describe("ConfigMap Controller", func() {
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
 		})
 	})
 })
